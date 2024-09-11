@@ -15,10 +15,10 @@ router.post('/webhooks/bitrix24', async (req, res) => {
     // Handle different Bitrix24 events
     switch (webhookData.event) {
       case 'ONVOXIMPLANTCALLSTART':
-        await handleOnVoximplantCallStart(webhookData);
+        handleOnVoximplantCallStart(webhookData);
         break;
       case 'ONVOXIMPLANTCALLEND':
-        await handleOnVoximplantCallEnd(webhookData);
+        handleOnVoximplantCallEnd(webhookData);
         break;
       // Add more cases for other Bitrix24 events as needed
       // Example:
@@ -28,6 +28,7 @@ router.post('/webhooks/bitrix24', async (req, res) => {
       default:
         console.log('Unhandled Bitrix24 event:', webhookData.event);
     }
+
 
     res.sendStatus(200);
 

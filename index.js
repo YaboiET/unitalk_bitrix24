@@ -4,6 +4,7 @@ const axios = require('axios');
 
 const app = express();
 const port = process.env.PORT || 3000;
+const FormData = require('form-data'); // Add this line
 
 app.use(bodyParser.json()); // Parse JSON request bodies
 
@@ -58,10 +59,8 @@ app.get('/callback', async (req, res) => {
   }
 
   try {
-    accessToken = await getAccessToken(code); 
+    accessToken = await getAccessToken(code); // TODO: Implement persistent access token storage (e.g., in a database) for production use
 
-    // You can add logic here to store the accessToken in a more persistent way
-    // (e.g., in a database) for production use
 
     console.log('Access token obtained:', accessToken);
     res.send('Authentication successful! You can close this window now.');

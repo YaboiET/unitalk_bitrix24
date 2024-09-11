@@ -11,7 +11,12 @@ router.post('/webhooks/unitalk', async (req, res) => {
 
   // Process Unitalk webhook data here
   console.log('Received Unitalk webhook:', webhookData);
-
+} catch (error) {
+  logger.error('Error processing Unitalk webhook:', { error }); // Use logger.error here
+  res.sendStatus(500); 
+}
+});
+  
   try {
     // Handle different Unitalk events
     switch (webhookData.event) {
@@ -19,14 +24,31 @@ router.post('/webhooks/unitalk', async (req, res) => {
         await handleOnCallCreated(webhookData);
         break;
       case 'onCallAnswered':
+      } catch (error) {
+        logger.error('Error in handleOnCallCreated:', { error }); // Use logger.error here
+      }
+    }
         await handleOnCallAnswered(webhookData);
         break;
       case 'onCallEnded':
+      } catch (error) {
+        logger.error('Error in handleOnCallAnswered:', { error }); // Use logger.error here
+      }
+    }
         await handleOnCallEnded(webhookData);
         break;
       case 'onCallRecordingFinished':
+      } catch (error) {
+        logger.error('Error in handleOnCallEnded:', { error }); // Use logger.error here
+      }
+    }
         await handleOnCallRecordingFinished(webhookData);
         break;
+
+      } catch (error) {
+        logger.error('Error in handleOnCallRecordingFinished:', { error }); // Use logger.error here
+      }
+    }
       // Add more cases for other Unitalk events as needed
       default:
         console.log('Unhandled Unitalk event:', webhookData.event);
@@ -44,7 +66,7 @@ router.post('/webhooks/unitalk', async (req, res) => {
 async function handleOnCallCreated(webhookData) {
   const phoneNumber = webhookData.call.to[0];
   const unitalkCallId = webhookData.call.id;
-  const autodialerId = webhookData.autodialerId;
+  const autodialerId = webhookData.autodialerId; // Make sure this field exists in the webhook payload
 
   // Retrieve lead ID from webhook data (adjust this based on your actual Unitalk payload structure)
   const leadId = webhookData.call.meta; // Assuming 'meta' field contains the lead ID. 
@@ -69,6 +91,10 @@ async function handleOnCallAnswered(webhookData) {
   const callerId = webhookData.call.from;
   const outerNumber = webhookData.call.outerNumber;
   const direction = webhookData.call.direction;
+  const callId = webhookData.call.callId; 
+  const uniqueId = webhookData.call.uniqueId;
+  const callerIdName = webhookData.call.callerIdName;
+
 
   // Capture additional relevant data from the webhook 
   const utmSource = webhookData.call.utmSource;
@@ -103,6 +129,9 @@ async function handleOnCallAnswered(webhookData) {
       utmSource, 
       utmMedium,
       utmCampaign
+      callId, 
+      uniqueId,
+      callerIdName
       // ... store other captured data
     });
 

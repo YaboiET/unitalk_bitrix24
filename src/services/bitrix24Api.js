@@ -225,18 +225,82 @@ async function triggerAutomation(automationId, data) {
 }
 
 
-// Function to update deal stage (if applicable)
-async function updateDealStage(dealId, newStageId) {
-  // ... (implementation will be added later if needed)
-  console.log('Updating deal stage for deal ID:', dealId, 'to:', newStageId);
+// Function to get the queue ID for a given autodialer
+async function getQueueIdForAutodialer(autodialerId) {
+  try {
+    // Fetch queue information from Bitrix24 (potentially with caching)
+    const queues = await getBitrix24Queues();
+
+    // Retrieve the "Initiative Lead" value for the autodialer 
+    const initiativeLead = await getInitiativeLeadForAutodialer(autodialerId); // need to implement this function
+
+    // Find the matching queue based on the Initiative Lead value
+    const queue = queues.find(q => q.NAME.includes(initiativeLead));
+
+    if (queue) {
+      return queue.ID;
+    } else {
+      // Log a warning and skip the call initiation
+      logger.warn('Queue not found for autodialer, skipping call initiation', { autodialerId });
+      return null;
+    }
+
+  } catch (error) {
+    console.error('Error getting queue ID for autodialer:', error);
+    // Handle the error appropriately (e.g., log, notify)
+    throw error; 
+  }
 }
 
-// Placeholder function to get the queue ID for a given autodialer
-async function getQueueIdForAutodialer(autodialerId) {
-  // ... (implementation will be added later based on your Bitrix24 queue configuration)
-  console.log('Getting queue ID for autodialer:', autodialerId);
-  // For now, return a default queue ID (replace with your actual logic)
-  return 28; 
+// Function to retrieve queue information from Bitrix24 (with caching)
+let cachedQueues = null;
+let cacheExpiry = null;
+
+async function getBitrix24Queues() {
+  try {
+    // Check if cache is valid
+    if (cachedQueues && cacheExpiry > Date.now()) {
+      return cachedQueues;
+    }
+
+    // Construct the Bitrix24 API URL
+    const apiUrl = `${config.bitrix24.apiUrl}voximplant.queue.get`;
+
+    // Make the API call using axios
+    const response = await axios.get(apiUrl, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      }
+    });
+
+    // Cache the results
+    cachedQueues = response.data.result;
+    cacheExpiry = Date.now() + (30 * 60 * 1000); // Cache for 30 minutes (adjust as needed)
+
+    // Return the list of queues
+    return cachedQueues;
+
+  } catch (error) {
+    console.error('Error getting Bitrix24 queues:', error);
+
+    // Add retry logic for potential API errors or network issues (example)
+    if (error.response && (error.response.status === 500 || error.response.status === 503)) { // Retry on 500 or 503 errors
+      const retryDelay = 2000; 
+      logger.warn(`Retrying getBitrix24Queues after ${retryDelay / 1000} seconds...`);
+      await new Promise(resolve => setTimeout(resolve, retryDelay));
+      return await getBitrix24Queues(); 
+    } else {
+      throw error;
+    }
+  }
+}
+
+// Placeholder function to get the "Initiative Lead" value for a given autodialer
+async function getInitiativeLeadForAutodialer(autodialerId) {
+  // ... (You'll need to implement this based on how you store/access this information)
+  console.log('Getting Initiative Lead for autodialer:', autodialerId);
+  // For now return a placeholder value
+  return 'Some Initiative Lead';
 }
 
 module.exports = {
