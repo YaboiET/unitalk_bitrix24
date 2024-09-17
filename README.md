@@ -5,7 +5,17 @@
 [TESTING](TESTING.md)
 [DEPLOYMENT](DEPLOYMENT.md)
 [Optimizations](optimizations.md)
-# Project Outline: Unitalk & Bitrix24 Integration using SIP Trunking
+
+# Unitalk & Bitrix24 Integration
+
+[TODO List](TODO.md)
+[Conversation History](conversation_history.md)
+[API Notes](API_NOTES.md)
+[Testing Strategy](TESTING.md)
+[Deployment Instructions](DEPLOYMENT.md)
+[Optimizations for Collaboration](optimizations.md)
+
+## Project Outline
 
 **Project Goals**
 
@@ -26,18 +36,18 @@
 
 **Integration Approach**
 
-* **SIP Trunking:** Establish a direct SIP trunk connection between Unitalk and Bitrix24 Voximplant.
-* **Unitalk Call Initiation:** Unitalk handles outbound call initiation, predictive dialing, and AMD.
-* **Bitrix24 Call Handling:** Bitrix24 receives incoming SIP calls from Unitalk, routes them to agents, and manages CRM integration and call recording.
-* **Unitalk Native Integration & API/Webhooks:** Utilize for additional CRM enhancements, data synchronization, and potential call control if needed.
-* **Agent Status Management:** Automatic updates based on Bitrix24 telephony statuses using automation rules or workflows
-* **Data Storage:** Utilize Bitrix24 Drive's "Network Drive" feature for storing integration data.
-* **Queue & Agent Assignment Mapping:** Utilize an external mapping table stored in Bitrix24 Drive.
-* **Autodialer Creation:** Triggered by new "Initiative" values in Bitrix24, with validation and lookup to prevent duplicates
+* SIP Trunking: Establish a direct SIP trunk connection between Unitalk and Bitrix24 Voximplant.
+* Unitalk Call Initiation: Unitalk handles outbound call initiation, predictive dialing, and AMD.
+* Bitrix24 Call Handling: Bitrix24 receives incoming SIP calls from Unitalk, routes them to agents, and manages CRM integration and call recording.
+* Unitalk Native Integration & API/Webhooks: Utilize for additional CRM enhancements, data synchronization, and potential call control if needed.
+* Agent Status Management: Automatic updates based on Bitrix24 telephony statuses using automation rules or workflows
+* Data Storage: Utilize Bitrix24 Drive's "Network Drive" feature for storing integration data.
+* Queue & Agent Assignment Mapping: Utilize an external mapping table stored in Bitrix24 Drive.
+* Autodialer Creation: Triggered by new "Initiative" values in Bitrix24, with validation and lookup to prevent duplicates
 
 **Project Phases**
 
-1.  **Planning and Preparation (2-3 weeks)** *(Completed)*
+1.  Planning and Preparation (2-3 weeks) *(Completed)*
 
     *   Requirements Gathering: *Completed*
     *   Gap Analysis: *Completed*
@@ -126,8 +136,10 @@
 *   CRM Data Accuracy (including AMD updates)
 *   User Satisfaction
 
+Please let me know when you have updated the `README.md` file on GitHub, and we can proceed with creating the `ERROR_HANDLING.md` and `DATA_MAPPING.md` files.
 
-# Unitalk & Bitrix24 Integration: Requirements Documentation
+
+## Unitalk & Bitrix24 Integration: Requirements Documentation
 
 **Project Goals**
 
@@ -199,7 +211,7 @@
     * Integration data (logs, call history, etc.)
     * External mapping table for queue and agent assignments
 
-* Evaluate the need for a dedicated database solution if data volume or complexity increases significantly in the future.
+* Evaluate the need for a dedicated database solution if data volume or complexity increases significantly in the future
 
 **Gaps and Assumptions**
 
