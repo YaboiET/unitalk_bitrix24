@@ -1,11 +1,3 @@
-"# unitalk_bitrix24" 
-[TODO List](TODO.md)
-[conversation hisrory](conversation_history.md)
-[API NOTES](API_NOTES.md)
-[TESTING](TESTING.md)
-[DEPLOYMENT](DEPLOYMENT.md)
-[Optimizations](optimizations.md)
-
 # Unitalk & Bitrix24 Integration
 
 [TODO List](TODO.md)
@@ -14,6 +6,7 @@
 [Testing Strategy](TESTING.md)
 [Deployment Instructions](DEPLOYMENT.md)
 [Optimizations for Collaboration](optimizations.md)
+[Error Handling & Retry Strategies](ERROR_HANDLING.md)
 
 ## Project Outline
 
@@ -261,7 +254,55 @@ Please let me know when you have updated the `README.md` file on GitHub, and we 
 
 **--- End of Requirements Document ---**
 
+## High-Level Architecture
 
+```mermaid
+graph LR
+    subgraph Unitalk
+        PD[Predictive Dialer] --> AMD[Answering Machine Detection]
+    end
+    subgraph Bitrix24
+        SC[SIP Connector] 
+        QR[Queue Routing]
+        CRM[CRM] 
+        BD[Bitrix24 Drive]
+    end
+    subgraph Integration (Node.js)
+        UH[Unitalk Webhooks]
+        BH[Bitrix24 Webhooks]
+        API[Bitrix24 API]
+        DS[Data Storage]
+    end
+    
+    PD --> UH
+    UH --> API[telephony.externalcall.register]
+    API --> SC
+    SC --> QR
+    QR --> Agent
+    Agent --> CRM
+    Agent --> BH
+    BH --> UH[updateAgentStatus]
+    UH --> API[/autodialers/calls/get]
+    API --> DS
+    UH --> DS
+	```
+	
+## Future Enhancements
+
+* **Advanced Call Control:** 
+    * Explore using Unitalk's API for programmatic call control features (e.g., call transfer, hold, mute) within the Bitrix24 interface.
+
+* **Deeper CRM Integration:**
+    * Expand the integration to include other CRM entities (contacts, deals) and automate more complex workflows based on call outcomes or events.
+
+* **Enhanced Reporting and Analytics:**
+    * Implement custom reports or integrate with an external BI tool to provide more in-depth analysis and visualization of call center data.
+
+* **Voice Analytics Integration:** 
+    * If Unitalk offers voice analytics capabilities, leverage their API to capture and analyze call transcripts or sentiment data.
+
+* **Dynamic Autodialer Management:**
+    * Implement functionality to create, update, or manage Unitalk autodialers directly from Bitrix24 based on campaign changes or other triggers.
 
 # Unitalk & Bitrix24 Integration Progress Report (as of September 13, 2024)
 
@@ -330,3 +371,5 @@ Please let me know when you have updated the `README.md` file on GitHub, and we 
     *   Prepare for deployment to a production environment
 	
 	**Tentative Deployment: September 20th (subject to change)**
+	
+	
