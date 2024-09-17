@@ -4,6 +4,7 @@
 [API NOTES](API_NOTES.md)
 [TESTING](TESTING.md)
 [DEPLOYMENT](DEPLOYMENT.md)
+[Optimizations](optimizations.md)
 # Project Outline: Unitalk & Bitrix24 Integration using SIP Trunking
 
 **Project Goals**

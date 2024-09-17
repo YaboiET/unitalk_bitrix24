@@ -16,11 +16,11 @@ This document outlines the testing strategy for the Unitalk & Bitrix24 integrati
 
 ## Test Phases
 
-1.  **Unit Testing**
+1.  Unit Testing
     * Test individual functions and components of the integration code in isolation
     * Use mocking or stubbing techniques to simulate external dependencies (Unitalk and Bitrix24 APIs)
 
-2.  **Integration Testing**
+2.  Integration Testing
     * Test the end-to-end call flow and interactions between Unitalk and Bitrix24
     * Include test cases for various scenarios, including:
         * Successful calls with different outcomes (answered, no answer, busy, etc.)
@@ -30,7 +30,7 @@ This document outlines the testing strategy for the Unitalk & Bitrix24 integrati
         * Call recording and data storage
     * Verify caller ID consistency, data accuracy, and error handling
 
-3.  **User Acceptance Testing (UAT)**
+3.  User Acceptance Testing (UAT)
     * Involve stakeholders (sales team, managers) to test the integration in a realistic environment
     * Gather feedback on usability, functionality and identify any potential issues or improvements
 
@@ -47,33 +47,57 @@ This document outlines the testing strategy for the Unitalk & Bitrix24 integrati
     * Confirm that call recordings are initiated and stored correctly in Bitrix24 Drive
 
 * **CRM Integration**
-    * Test CRM record updates based on call outcomes and AMD results
-    * Verify that the disposition field is updated accurately and triggers the expected lead stage changes
-    * Check if additional call data (e.g., queue time, call duration) is captured and stored correctly
+    * Test that the `disposition` and `answ_machine_attempts` fields in the lead record are updated accurately based on call outcomes and AMD results from Unitalk
+    * Verify that the disposition updates trigger the expected lead stage changes through Bitrix24 automation
+    * Check if other call-related data (e.g., `queueTime`, `duration`, `callerId`, `utmSource`, `utmMedium`, `utmCampaign`) is captured and stored correctly in Bitrix24 Drive, associated with the corresponding lead
 
 * **Agent Status Synchronization**
-    * Test both manual and automatic agent status updates
-    * Verify that changes in Bitrix24 telephony status (e.g., "On Call") are reflected in Unitalk's agent status
-    * Handle potential conflicts or edge cases in status updates
+    * Test automatic agent status updates based on Bitrix24 telephony events (`ONVOXIMPLANTCALLSTART`, `ONVOXIMPLANTCALLEND`)
+    * Verify that changes in Bitrix24 telephony status are reflected in Unitalk's agent status
+    * Handle potential conflicts or edge cases in status updates (e.g., agent logs out while on a call)
 
 * **Error Handling and Resilience**
     * Simulate various error scenarios (API failures, network issues, invalid data) and ensure the integration handles them gracefully with appropriate retries, logging, and notifications
 
 * **Reporting and Analytics**
-    * Test the generation of required reports using Bitrix24's BI builder or external BI tool
-    * Validate the accuracy of the reported metrics (productivity, connect time, AHT, disposition outcomes, strike rate)
+    * Test the generation of required reports using Bitrix24's BI builder
+    * Validate the accuracy of the reported metrics:
+        * Productivity (time spent waiting - `queueTime`)
+        * Connect (time spent connected to a customer - `talkTime`)
+        * AHT (average handling time - `duration`)
+        * Disposition outcome reporting (filterable - using `disposition` field)
+        * Strike rate (bookings/appointments per call connect - based on `disposition` and connected calls)
+    * If using an external BI tool, test the data export and integration process
 
-* **CRM Integration**
-    * Test that the `disposition` and `answ_machine_attempts` fields in the lead record are updated accurately based on call outcomes and AMD results from Unitalk
-    * Verify that the disposition updates trigger the expected lead stage changes through Bitrix24 automation
-    * Check if other call-related data (e.g., queue time, call duration, caller ID, UTM parameters) is captured and stored correctly in Bitrix24 Drive, associated with the corresponding lead
+* **Bitrix24 Automations**
+
+    * **AMD Automation**
+        * Test the trigger condition: `ONVOXIMPLANTCALLEND` with `callState` = "ANSWERING_MACHINE"
+        * Verify that the actions are executed correctly
+            * `subdisposition` is set to "Voicemail"
+            * Lead stage is updated based on `answ_machine_attempts` count
+
+    * **Disposition to Lead Stage Mapping Automation**
+        * Test the trigger condition: "On Disposition field update"
+        * Verify the conditions and actions for each disposition value are implemented correctly, including:
+            * Incrementing `answ_machine_attempts` for "No Answer" dispositions
+            * Moving leads to the appropriate stages based on disposition and `answ_machine_attempts`
+            * Resetting `answ_machine_attempts` when needed
+
+    * **Callback Reminders/Tasks Automation**
+        * Test the trigger condition: "On Callback Scheduled field update"
+        * Verify that tasks are created or updated correctly with the specified due date and assigned agent
+        * Test reminder notifications (if applicable)
+
+    * **"Accidentally Hung Up" Redial Automation**
+        * Test the trigger condition: "On Subdisposition field update" with value "Accidentally Hung Up"
+        * Verify that the integration initiates an immediate redial
+        * Confirm that the lead's "Callback Scheduled" field is updated to a past date/time
 
 **Additional Considerations**
 
-* **Test Data:** Prepare test data in both Unitalk and Bitrix24 to simulate different call scenarios and outcomes
-* **Test Environments:**  Conduct testing in a staging or sandbox environment before deploying to production
-* **Performance Testing:** If applicable, perform load or stress testing to evaluate the integration's performance under high call volumes
-* **User Feedback:**  Gather feedback from users (agents, managers) during UAT to identify any usability issues or areas for improvement
-
-**Remember to update this `TESTING.md` file with more specific test cases and scenarios as you progress with the development and gain a deeper understanding of the integration's behavior** 
+* Test Data: Prepare test data in both Unitalk and Bitrix24 to simulate different call scenarios, outcomes, and agent statuses
+* Test Environments: Conduct testing in a staging or sandbox environment before deploying to production
+* Performance Testing: If applicable perform load or stress testing to evaluate the integration's performance under high call volumes
+* User Feedback: Gather feedback from users during UAT to identify any usability issues or areas for improvement
 
