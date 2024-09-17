@@ -7,6 +7,7 @@
 [Deployment Instructions](DEPLOYMENT.md)
 [Optimizations for Collaboration](optimizations.md)
 [Error Handling & Retry Strategies](ERROR_HANDLING.md)
+[Data Mapping](DATA_MAPPING.md)
 
 ## Project Outline
 
