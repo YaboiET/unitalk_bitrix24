@@ -257,35 +257,45 @@ Please let me know when you have updated the `README.md` file on GitHub, and we 
 
 ## High-Level Architecture
 
+
 ```mermaid
 graph LR
     subgraph Unitalk
         PD[Predictive Dialer] --> AMD[Answering Machine Detection]
     end
     subgraph Bitrix24
-        SC[SIP Connector] 
+        SC[SIP Connector]
         QR[Queue Routing]
-        CRM[CRM] 
+        CRM[CRM]
         BD[Bitrix24 Drive]
+        AUTOMATION[Automation]
     end
-    subgraph Integration (Node.js)
+    subgraph Integration Node.js
         UH[Unitalk Webhooks]
         BH[Bitrix24 Webhooks]
-        API[Bitrix24 API]
+        API_B[Bitrix24 API]
+        API_U[Unitalk API]
         DS[Data Storage]
     end
-    
-    PD --> UH
-    UH --> API[telephony.externalcall.register]
-    API --> SC
-    SC --> QR
-    QR --> Agent
-    Agent --> CRM
-    Agent --> BH
-    BH --> UH[updateAgentStatus]
-    UH --> API[/autodialers/calls/get]
-    API --> DS
-    UH --> DS 	```
+
+    PD --> UH["onCallCreated"]
+    UH --> API_B["telephony.externalcall.register"]
+    API_B --> SC["Call Initiation"]
+    SC --> QR["Call Queued"]
+    QR --> Agent((Agent))
+    Agent --> BH["ONVOXIMPLANTCALLANSWER"]
+    BH --> UH["updateAgentStatus(PAUS)"]
+    Agent --> CRM["Call Connected"]
+    UH["onCallEnded"] --> API_U["/autodialers/calls/get"]
+    API_U --> DS["Store Call Data"]
+    UH["onCallEnded"] --> DS
+    UH["onCallRecordingFinished"] --> DS
+    UH["onCallEnded"] --> API_B["crm.lead.update"]
+    API_B --> CRM
+    UH["onCallEnded"] --> AUTOMATION
+    AUTOMATION --> CRM
+    Unitalk_Native_Integration -.-> CRM
+    Agent -.-> UH["onCallEnded"]								 	```
 
 
 	
