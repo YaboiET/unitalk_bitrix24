@@ -286,6 +286,8 @@ graph LR
     Agent --> BH["ONVOXIMPLANTCALLANSWER"]
     BH --> UH["updateAgentStatus(PAUS)"]
     Agent --> CRM["Call Connected"]
+    Agent --> BH["ONVOXIMPLANTCALLEND"]
+    BH --> UH["updateAgentStatus(WORK)"]
     UH["onCallEnded"] --> API_U["/autodialers/calls/get"]
     API_U --> DS["Store Call Data"]
     UH["onCallEnded"] --> DS
@@ -294,8 +296,7 @@ graph LR
     API_B --> CRM
     UH["onCallEnded"] --> AUTOMATION
     AUTOMATION --> CRM
-    Unitalk_Native_Integration -.-> CRM
-    Agent -.-> UH["onCallEnded"]								 	```
+    Unitalk_Native_Integration -.-> CRM								 	```
 
 
 	
