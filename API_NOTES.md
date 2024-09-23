@@ -330,7 +330,6 @@
         * **Task Automation**
             * Leverage Bitrix24's automation rules to create tasks automatically based on call events or CRM data changes
             * Set task reminders to ensure timely follow-up and action
-
 ## Unitalk API
 
 **Core Functionalities:**
@@ -489,7 +488,7 @@
     * **Unitalk Help Center:** Consult the Help Center for troubleshooting and support: [https://help.unitalk.ru/](https://help.unitalk.ru/)
 
 ## Bitrix24. Telephony (SIP-based Integration)
-## Bitrix24 Telephony (SIP-based Integration)
+
 
 **Key Concepts**
 
