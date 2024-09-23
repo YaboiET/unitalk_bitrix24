@@ -205,6 +205,37 @@
         * `crm.field.add`: Adds a new field to a specified CRM entity type
         * `crm.field.update`: Updates a field of a specified CRM entity type
         * `crm.field.delete`: Deletes a field of a specified CRM entity type
+	
+* **Agent Status Synchronization:**
+    * **Webhook:** `ONTELEPHONY_LINE_STATUS_CHANGED`
+        * **Payload Example:**
+
+        ```json
+        {
+            "event": "ONTELEPHONY_LINE_STATUS_CHANGED",
+            "data": {
+                "LINE_ID": 123,          // ID of the external line
+                "STATUS": "BUSY",        // New status of the line (FREE, BUSY, PAUSED)
+                "CALL_ID": 456,          // ID of the associated call (if applicable)
+                // ... other line and call details
+            }
+        }
+        ```
+
+    * **API Method:** `telephony.externalLine.get` (fallback or periodic checks)
+        * **Example (using Node.js `bitrix24` library):**
+
+        ```javascript
+        bitrix24.callMethod('telephony.externalLine.get')
+            .then(response => {
+                const externalLines = response.result;
+                // Process external lines and update agent statuses in Unitalk
+            })
+            .catch(error => {
+                console.error('Error retrieving external line data:', error);
+                // Implement error handling and retry logic
+            });
+        ```
 
 **Key Features & Considerations:**
 
@@ -471,6 +502,48 @@
                 * Similar to `statistic.get`
             * **Response:** Generates a CSV file containing the call statistics and provides a download link or allows direct download
 
+
+* **Real-time Status of Inner Lines:**
+    * **Primary Mechanism: Webhooks**
+        * Utilize Unitalk webhooks to receive real-time notifications about user status changes
+        * Upon receiving a webhook event, update the corresponding Bitrix24 external line status using `telephony.externalLine.update`
+
+    * **Secondary Mechanism: Polling (Fallback)**
+        * Periodically poll the `/users/getStatus` endpoint to retrieve the latest user statuses
+        * Use the retrieved data to update Bitrix24 external line statuses
+        * Set a reasonable polling interval to balance real-time accuracy with API usage efficiency
+
+    * **Considerations for Fixed Inner Lines:**
+        * Maintain a mapping between Unitalk users and Bitrix24 queues
+        * Focus polling on specific users assigned to the fixed inner lines
+        * Ensure efficient polling intervals to avoid unnecessary API calls
+    * **Authentication:** API key
+    * **Response:** 
+        * Returns an array of user objects, each containing the user's ID, name, extension, and status.
+        * **Example Response:**
+
+        ```json
+        [
+            {
+                "user_id": 123,
+                "name": "John Doe",
+                "extension": "101",
+                "status": "available" 
+            },
+            {
+                "user_id": 456,
+                "name": "Jane Smith",
+                "extension": "102",
+                "status": "busy" 
+            }
+        ]
+        ```
+
+    * **Implementation Considerations:**
+        * Map Unitalk user IDs or extensions to corresponding Bitrix24 external line IDs.
+        * Use the `telephony.externalLine.update` method to update the status of the associated Bitrix24 external line based on the Unitalk user's status
+
+
 **Key Features & Considerations:**
 
 * **Authentication:** API keys are used for secure access.
@@ -494,10 +567,15 @@
     * **Unitalk Help Center:** Consult the Help Center for troubleshooting and support: [https://help.unitalk.ru/](https://help.unitalk.ru/)
 
 * **Real-time Status of Inner Lines:**
+
     * **Endpoint:** `/phones/inner` (or similar, refer to Unitalk documentation)
     * **Authentication:** API key
+    * **Parameters:** (Refer to Unitalk documentation for details)
     * **Response:** Information about inner lines and their statuses
-
+    * **Polling vs. Webhooks:**
+        * **Prioritize Webhooks (if available) for real-time updates**
+        * **Fallback to Polling with appropriate interval if webhooks are not feasible**
+		
 ## Bitrix24. Telephony (SIP-based Integration)
 
 
@@ -984,6 +1062,11 @@ bitrix24
 * **Configuration Flexibility:** Provide configuration options for customization
 
 * **Performance Optimization:** Utilize batch requests, caching, and asynchronous processing.
+
+**Dynamic Agent Assignment:**
+    * **Data Structure:** Define a suitable data structure (e.g., JSON object, database table) to store the dynamic mapping between Unitalk users/extensions, Bitrix24 queues, and assigned agents
+    * **Update Mechanism:** Implement a mechanism to update this mapping dynamically, either through user configuration within the integration or based on predefined rules or events
+    * **Status Synchronization:** When processing Unitalk webhook events or polling the `/users/getStatus` endpoint, use the dynamic mapping to identify the relevant Bitrix24 queue and agents and update their statuses accordingly
 
 ### Additional Technical Considerations
 * **Field Type Considerations:**
