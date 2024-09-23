@@ -279,6 +279,12 @@
     * **D7 API documentation**: Specific to the cloud-hosted version: [https://training.bitrix24.com/rest_help/](https://training.bitrix24.com/rest_help/)
     * **Navigation challenges:** Can be overwhelming due to the platform's vastness. Utilize search and filtering effectively
 
+### Telephony (integration with VoIP providers)
+
+* **Agent Status Synchronization:**
+    * **Webhook:** `ONTELEPHONY_LINE_STATUS_CHANGED`
+    * **API Method:** `telephony.externalLine.get`
+
 #**Specific Areas of Interest for Integration:**
 
 * **CRM:**
@@ -486,6 +492,11 @@
     * **Technical documentation:** Available, but may require further clarification or examples
     * **Google Docs document:** Refer to the provided document for additional insights and specific integration scenarios
     * **Unitalk Help Center:** Consult the Help Center for troubleshooting and support: [https://help.unitalk.ru/](https://help.unitalk.ru/)
+
+* **Real-time Status of Inner Lines:**
+    * **Endpoint:** `/phones/inner` (or similar, refer to Unitalk documentation)
+    * **Authentication:** API key
+    * **Response:** Information about inner lines and their statuses
 
 ## Bitrix24. Telephony (SIP-based Integration)
 
@@ -964,6 +975,15 @@ bitrix24
     * Build the integration with flexibility in mind, allowing for customization and adaptation to your specific business requirements and workflows.
     * Consider providing configuration options for users to tailor the integration's behavior to their needs.
 
+* **Error Handling:** Implement robust error handling for both Bitrix24 and Unitalk API calls.
+
+* **Data Validation:** Validate and sanitize data received from both APIs.
+
+* **User Mapping:** Ensure clear mapping between Unitalk and Bitrix24 users.
+
+* **Configuration Flexibility:** Provide configuration options for customization
+
+* **Performance Optimization:** Utilize batch requests, caching, and asynchronous processing.
 
 ### Additional Technical Considerations
 * **Field Type Considerations:**
