@@ -21,11 +21,7 @@
 * Automate answering machine detection to update lead stage/disposition in Bitrix24 CRM.
 * Leverage Unitalk's native Bitrix24 integration for additional CRM enhancements.
 * Enable agents to manage their Available/Busy status using automatic updates based on Bitrix24 telephony statuses.
-* Capture and report on key call center metrics:
-    * Productivity (time spent waiting)
-    * Connect (time spent connected to a customer)
-    * AHT (average handling time)
-    * Disposition outcome reporting (filterable)
+* Capture and report on key call center metrics:  
     * Strike rate (bookings/appointments per call connect)
 
 **Integration Approach**
@@ -286,8 +282,7 @@ graph LR
     Agent --> BH["ONVOXIMPLANTCALLANSWER"]
     BH --> UH["updateAgentStatus(PAUS)"]
     Agent --> CRM["Call Connected"]
-    Agent --> BH["ONVOXIMPLANTCALLEND"]
-    BH --> UH["updateAgentStatus(WORK)"]
+    Agent -.-> UH["onCallEnded"]
     UH["onCallEnded"] --> API_U["/autodialers/calls/get"]
     API_U --> DS["Store Call Data"]
     UH["onCallEnded"] --> DS
@@ -296,9 +291,9 @@ graph LR
     API_B --> CRM
     UH["onCallEnded"] --> AUTOMATION
     AUTOMATION --> CRM
-    Unitalk_Native_Integration -.-> CRM								 	```
+    Unitalk_Native_Integration -.-> CRM		
 
-
+```
 	
 ## Future Enhancements
 
