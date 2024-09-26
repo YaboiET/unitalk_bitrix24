@@ -137,64 +137,64 @@ try {
 
 // Function to store call details in Bitrix24 Drive
 async function storeCallDetails(unitalkCallId, callDetails) {
-    const maxRetries = 3; // Maximum number of retries
-    let retryCount = 0;
+  const maxRetries = 3; 
+  let retryCount = 0;
 
-    while (retryCount < maxRetries) {
-        try {
-        // Construct the file path for storing call details (with timestamp for better organization)
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-'); // Replace colons and dots for valid file names
-        const filePath = `./call_details_${unitalkCallId}_${timestamp}.json`; 
+  while (retryCount < maxRetries) {
+    try {
+      // Construct the file path for storing call details (with timestamp)
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-'); 
+      const filePath = `./call_details_${unitalkCallId}_${timestamp}.json`;
 
-        // Write call details to the file
-        fs.writeFileSync(filePath, JSON.stringify(callDetails));
+      // Write call details to the file
+      fs.writeFileSync(filePath, JSON.stringify(callDetails));
 
-        // Upload the file to Bitrix24 Drive
-        const apiUrl = `${config.bitrix24.apiUrl}disk.folder.uploadfile`;
+      // Upload the file to Bitrix24 Drive
+      const apiUrl = `${config.bitrix24.apiUrl}disk.folder.uploadfile`;
 
-        const formData = new FormData();
-        formData.append('id', config.bitrix24.driveFolderId);
-        formData.append('data', fs.createReadStream(filePath), `call_details_${unitalkCallId}_${timestamp}.json`);
+      const formData = new FormData();
+      formData.append('id', config.bitrix24.driveFolderId);
+      formData.append('data', fs.createReadStream(filePath), `call_details_${unitalkCallId}_${timestamp}.json`);
 
-        const response = await axios.post(apiUrl, formData, {
-            headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'multipart/form-data'
-            }
-        });
-
-        if (response.data.result) {
-            logger.info('Call details stored successfully in Bitrix24 Drive', { unitalkCallId });
-            // Optionally, delete the local file after successful upload
-            fs.unlinkSync(filePath);
-            return; // Exit the loop on success
-        } else {
-            const errorMessage = `Error storing call details in Bitrix24 Drive: ${response.status} - ${response.data.error} - ${response.data.error_description}`;
-            logger.error(errorMessage, { unitalkCallId });
-
-            // Check for specific error codes and handle them appropriately 
-            if (response.status === 401) {
-            // ... implement token refresh logic and retry the upload
-            logger.warn('Retrying storeCallDetails after token refresh...');
-            // ... your token refresh logic here ...
-            // Make sure to update the 'accessToken' variable after refreshing
-            continue; // Retry the loop
-            } else if (response.status === 500) {
-            // ... retry the upload after a delay (exponential backoff)
-            retryCount++;
-            const retryDelay = Math.pow(2, retryCount) * 1000; // Adjust the delay as needed
-            logger.warn(`Retrying storeCallDetails after ${retryDelay / 1000} seconds...`);
-            await new Promise(resolve => setTimeout(resolve, retryDelay));
-            continue; // Retry the loop
-            } else {
-            // ... handle other errors (log, notify, etc.)
-            throw new Error(errorMessage);
-            }
+      const response = await axios.post(apiUrl, formData, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'multipart/form-data'
         }
+      });
+
+      if (response.data.result) {
+        logger.info('Call details stored successfully in Bitrix24 Drive', { unitalkCallId });
+        // Optionally delete the local file after successful upload
+        fs.unlinkSync(filePath);
+        return; 
+      } else {
+        const errorMessage = `Error storing call details in Bitrix24 Drive: ${response.status} - ${response.data.error} - ${response.data.error_description}`;
+        logger.error(errorMessage, { unitalkCallId });
+
+        // Check for specific error codes and handle them appropriately 
+        if (response.status === 401) {
+          // ... implement token refresh logic and retry the upload
+          logger.warn('Retrying storeCallDetails after token refresh...');
+          // ... your token refresh logic here ...
+          // Make sure to update the 'accessToken' variable after refreshing
+          continue; 
+        } else if (response.status === 500) {
+          // ... retry the upload after a delay (exponential backoff)
+          retryCount++;
+          const retryDelay = Math.pow(2, retryCount) * 1000;
+          logger.warn(`Retrying storeCallDetails after ${retryDelay / 1000} seconds...`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+          continue; 
+        } else {
+          // ... handle other errors (log, notify, etc.)
+          throw new Error(errorMessage);
+        }
+      }
 
     } catch (error) {
-        logger.error('Error uploading call details to Bitrix24 Drive:', { unitalkCallId, error });
-        // Handle the error appropriately
+      logger.error('Error uploading call details to Bitrix24 Drive:', { unitalkCallId, error });
+      // Handle the error appropriately
     }
   });
 
