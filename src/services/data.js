@@ -203,31 +203,17 @@ async function storeCallDetails(unitalkCallId, callDetails) {
     // Handle the error appropriately
   });
 
-} catch (error) {
-  console.error('Error storing call details:', error);
-  throw error; 
-}
-}
+} 
 
-  writeStream.on('error', (error) => {
-    logger.error('Error writing call details to file:', { unitalkCallId, error });
-    // Handle the error appropriately
-  });
-
-} catch (error) {
-  console.error('Error storing call details:', error);
-  throw error; 
-}
-}
 
 // Function to store call recording URL in Bitrix24 Drive
 async function storeCallRecording(bitrix24CallId, recordingUrl) {
-  const maxRetries = 3;
+  const maxRetries = 3; 
   let retryCount = 0;
 
   while (retryCount < maxRetries) {
     try {
-      // Construct the file path for storing call recording URL (adjust as needed)
+      // Construct the file path for storing call recording URL 
       const filePath = `./call_recording_${bitrix24CallId}.json`;
 
       // Write the recording URL to the file
@@ -258,29 +244,30 @@ async function storeCallRecording(bitrix24CallId, recordingUrl) {
 
         // Check for specific error codes and handle them appropriately 
         if (response.status === 401) {
-          // ... implement token refresh logic and retry the upload
-          logger.warn('Retrying storeCallRecording after token refresh...');
-          // ... your token refresh logic here ...
-          // Make sure to update the 'accessToken' variable after refreshing
+          // Handle unauthorized access - Refresh token and retry
+          accessToken = await refreshAccessToken(); // Implement your token refresh logic here
           continue; // Retry the loop
         } else if (response.status === 500) {
-          // ... retry the upload after a delay (exponential backoff)
+          // Retry with exponential backoff
           retryCount++;
-          const retryDelay = Math.pow(2, retryCount) * 1000; // Adjust the delay as needed
+          const retryDelay = Math.pow(2, retryCount) * 1000;
           logger.warn(`Retrying storeCallRecording after ${retryDelay / 1000} seconds...`);
           await new Promise(resolve => setTimeout(resolve, retryDelay));
           continue; // Retry the loop
         } else {
-          // ... handle other errors (log, notify, etc.)
-          throw new Error(errorMessage);
+          // Log other errors and continue 
+          logger.error('Unexpected error storing call recording URL:', { bitrix24CallId, error });
         }
       }
 
-  } catch (error) {
-    console.error('Error storing call recording URL:', error);
-    throw error;
+    } catch (error) {
+      console.error('Error storing call recording URL:', error);
+      // Log the error for further investigation
+      logger.error('Error in storeCallRecording:', { bitrix24CallId, error });
+    }
   }
 }
+
 
 // Function to store agent-autodialer assignments 
 async function storeAgentAssignments(assignments) {
@@ -311,39 +298,38 @@ async function storeAgentAssignments(assignments) {
 
       if (response.data.result) {
         logger.info('Agent assignments stored successfully in Bitrix24 Drive');
-        // Optionally delete the local file after successful upload
+        // Optionally, delete the local file after successful upload
         fs.unlinkSync(filePath);
-        return; // Exit loop on success
+        return; 
       } else {
         const errorMessage = `Error storing agent assignments in Bitrix24 Drive: ${response.status} - ${response.data.error} - ${response.data.error_description}`;
         logger.error(errorMessage);
 
         // Check for specific error codes and handle them appropriately 
         if (response.status === 401) {
-          // ... implement token refresh logic and retry the upload
-          logger.warn('Retrying storeAgentAssignments after token refresh...');
-          // ... your token refresh logic here ...
-          // Make sure to update the 'accessToken' variable after refreshing
+          // Handle unauthorized access - Refresh token and retry
+          accessToken = await refreshAccessToken(); // Implement your token refresh logic here
           continue; // Retry the loop
-        } else if (response.status === 500) {
-          // ... retry the upload after a delay (exponential backoff)
+        } else if (response.status >= 500 && response.status < 600) { // Server error
+          // Retry with exponential backoff
           retryCount++;
-          const retryDelay = Math.pow(2, retryCount) * 1000; 
+          const retryDelay = Math.pow(2, retryCount) * 1000;
           logger.warn(`Retrying storeAgentAssignments after ${retryDelay / 1000} seconds...`);
           await new Promise(resolve => setTimeout(resolve, retryDelay));
           continue; // Retry the loop
         } else {
-          // ... handle other errors (log, notify, etc.)
+          // Other errors - log and throw
           throw new Error(errorMessage);
         }
       }
 
     } catch (error) {
       console.error('Error storing agent assignments:', error);
-      throw error; 
+      throw error;
     }
   }
 }
+
 // Function to get agent assignments from Bitrix24 Drive
 async function getAgentAssignments() {
   try {
@@ -390,7 +376,7 @@ async function getAgentAssignments() {
       } else {
         throw new Error(errorMessage);
       }
-
+      
     } else if (error.request) {
       // The request was made but no response was received
       console.error('No response from Bitrix24 API:', error.request);
@@ -400,6 +386,22 @@ async function getAgentAssignments() {
       console.error('Error setting up  
  Bitrix24 API request:', error.message);
       throw new Error('An error occurred while retrieving agent assignments.');
+    }
+  }
+}
+    // Add retry logic for potential API errors or network issues
+    if (error.response && (error.response.status === 500 || error.response.status === 503)) { 
+      const retryDelay = 2000; 
+      logger.warn(`Retrying getAgentAssignments after ${retryDelay / 1000} seconds...`);
+      await new Promise(resolve => setTimeout(resolve, retryDelay));
+      return await getAgentAssignments(); 
+    } 
+    // If the file is not found, return an empty array (assuming no assignments initially)
+    else if (error.response && error.response.status === 404) {
+      logger.warn('Agent assignments file not found, returning empty array');
+      return [];
+    } else {
+      throw error;
     }
   }
 }

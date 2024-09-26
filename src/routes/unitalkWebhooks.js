@@ -11,12 +11,7 @@ router.post('/webhooks/unitalk', async (req, res) => {
 
   // Process Unitalk webhook data here
   console.log('Received Unitalk webhook:', webhookData);
-} catch (error) {
-  logger.error('Error processing Unitalk webhook:', { error }); // Use logger.error here
-  res.sendStatus(500); 
-}
-});
-  
+
   try {
     // Handle different Unitalk events
     switch (webhookData.event) {
@@ -24,31 +19,14 @@ router.post('/webhooks/unitalk', async (req, res) => {
         await handleOnCallCreated(webhookData);
         break;
       case 'onCallAnswered':
-      } catch (error) {
-        logger.error('Error in handleOnCallCreated:', { error }); // Use logger.error here
-      }
-    }
         await handleOnCallAnswered(webhookData);
         break;
       case 'onCallEnded':
-      } catch (error) {
-        logger.error('Error in handleOnCallAnswered:', { error }); // Use logger.error here
-      }
-    }
         await handleOnCallEnded(webhookData);
         break;
       case 'onCallRecordingFinished':
-      } catch (error) {
-        logger.error('Error in handleOnCallEnded:', { error }); // Use logger.error here
-      }
-    }
         await handleOnCallRecordingFinished(webhookData);
         break;
-
-      } catch (error) {
-        logger.error('Error in handleOnCallRecordingFinished:', { error }); // Use logger.error here
-      }
-    }
       // Add more cases for other Unitalk events as needed
       default:
         console.log('Unhandled Unitalk event:', webhookData.event);
@@ -66,7 +44,7 @@ router.post('/webhooks/unitalk', async (req, res) => {
 async function handleOnCallCreated(webhookData) {
   const phoneNumber = webhookData.call.to[0];
   const unitalkCallId = webhookData.call.id;
-  const autodialerId = webhookData.autodialerId; // Make sure this field exists in the webhook payload
+  const autodialerId = webhookData.autodialerId;
 
   // Retrieve lead ID from webhook data (adjust this based on your actual Unitalk payload structure)
   const leadId = webhookData.call.meta; // Assuming 'meta' field contains the lead ID. 
@@ -95,7 +73,6 @@ async function handleOnCallAnswered(webhookData) {
   const uniqueId = webhookData.call.uniqueId;
   const callerIdName = webhookData.call.callerIdName;
 
-
   // Capture additional relevant data from the webhook 
   const utmSource = webhookData.call.utmSource;
   const utmMedium = webhookData.call.utmMedium;
@@ -108,43 +85,43 @@ async function handleOnCallAnswered(webhookData) {
 
     // Update CRM record in Bitrix24 
     await bitrix24Service.updateCrmRecord(bitrix24CallId, { 
-      callAnswered: true, 
-      callStartTime: startTime.toISOString(), 
-      callerId: callerId,
-      utmSource, 
-      utmMedium,
-      utmCampaign
-      // ... add other relevant fields to update in Bitrix24 CRM 
+        callAnswered: true, 
+        callStartTime: startTime.toISOString(), 
+        callerId: callerId,
+        utmSource, 
+        utmMedium,
+        utmCampaign
+        // ... add other relevant fields to update in Bitrix24 CRM 
     });
 
     // Store call details in Bitrix24 Drive for reporting
     await dataService.storeCallDetails(unitalkCallId, { 
-      startTime: startTime.toISOString(),
-      callerId, 
-      outerNumber,
-      direction,
-      callAnswered: true,
-      bitrix24CallId,
-      autodialerId,
-      utmSource, 
-      utmMedium,
-      utmCampaign
-      callId, 
-      uniqueId,
-      callerIdName
-      // ... store other captured data
+        startTime: startTime.toISOString(),
+        callerId, 
+        outerNumber,
+        direction,
+        callAnswered: true,
+        bitrix24CallId,
+        autodialerId,
+        utmSource, 
+        utmMedium,
+        utmCampaign,
+        callId,
+        uniqueId,
+        callerIdName
+        // ... store other captured data
     });
 
     // Log detailed information about the answered call
     logger.info('Unitalk call answered', {
-      unitalkCallId,
-      bitrix24CallId,
-      autodialerId,
-      startTime,
-      callerId,
-      outerNumber,
-      direction,
-      // ... other captured data
+        unitalkCallId,
+        bitrix24CallId,
+        autodialerId,
+        startTime,
+        callerId,
+        outerNumber,
+        direction,
+        // ... other captured data
     });
 
   } catch (error) {
@@ -190,7 +167,7 @@ async function handleOnCallEnded(webhookData) {
 
     // If AMD detected an answering machine, trigger automation to update lead stage/disposition
     if (callState === 'ANSWERING_MACHINE') { 
-      // Trigger Bitrix24 automation (replace 'YOUR_AUTOMATION_ID' with the actual automation ID)
+      // Trigger Bitrix24 automation 
       await bitrix24Service.triggerAutomation(config.bitrix24.automationId, { 
         callId: bitrix24CallId,
         // ... other relevant data you want to pass to the automation
@@ -335,7 +312,7 @@ function mapCallStateToDisposition(callState, currentDisposition) {
 
     // Add more cases for other callState values as needed
     default:
-      return currentDisposition;
+      return 'Unknown'; 
   }
 }
 

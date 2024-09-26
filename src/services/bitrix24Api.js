@@ -131,25 +131,24 @@ async function updateCrmRecord(leadId, updateData) {
     } else {
       console.error('Error updating CRM record (lead):', leadId, response.data.error);
 
-      // More specific error handling
-      if (response.status === 400) {
-        throw new Error('Bitrix24 API: Bad Request. Check your parameters.');
-      } else if (response.status === 401) {
-        // Handle unauthorized access (potentially retry after refreshing the token)
-        // ... (implementation will depend on your token refresh logic)
-        throw new Error('Bitrix24 API: Unauthorized. Token might be invalid or expired.');
-      } else if (response.status === 403) {
-        throw new Error('Bitrix24 API: Forbidden. Check your app permissions.');
-      } else if (response.status === 404) {
-        throw new Error('Bitrix24 API: Not Found. The CRM record might not exist.');
+      // Retry logic for potential API errors 
+      if (response.status === 401) {
+        // Handle unauthorized access - Refresh token and retry
+        accessToken = await refreshAccessToken(); // Implement your token refresh logic here
+        return updateCrmRecord(leadId, updateData); 
+      } else if (response.status >= 500 && response.status < 600) { // Server error
+        // Retry with exponential backoff 
+        await new Promise(resolve => setTimeout(resolve, 2000)); 
+        return updateCrmRecord(leadId, updateData); 
       } else {
-        throw new Error('Bitrix24 API Error: ' + response.data.error);
+        // Other errors - log and throw
+        throw new Error(response.data.error);
       }
     }
 
   } catch (error) {
     console.error('Error updating CRM record (lead):', leadId, error);
-    throw error;
+    throw error; 
   }
 }
 
@@ -210,22 +209,33 @@ async function getInitiativeLeadForAutodialer(autodialerId) {
   }
 }
 
-/// Function to create a CRM activity (call log)
+
+// Function to create a CRM activity (call log)
 async function createCrmActivity(callData) {
-  // ... (implementation will be added later based on your CRM structure and requirements)
-  console.log('Creating CRM activity:', callData);
-}
-
-// Function to trigger Bitrix24 automation
-async function triggerAutomation(automationId, data) {
   try {
-    const apiUrl = `${config.bitrix24.apiUrl}bizproc.automation.trigger`;
+    // Construct the Bitrix24 API URL for creating CRM activity
+    const apiUrl = `${config.bitrix24.apiUrl}crm.activity.add`;
 
-    // Prepare the request payload
+    // Prepare the request payload 
     const payload = {
-      CODE: automationId, 
-      DOCUMENT_ID: [ 'crm', 'CCrmDocumentLead', data.callId ], // Assuming you're working with leads
-      PARAMETERS: data // Pass any additional data needed for the automation
+      fields: {
+        OWNER_TYPE_ID: 2, // 2 for Lead
+        OWNER_ID: callData.leadId, 
+        TYPE_ID: 2, // 2 for Call
+        SUBJECT: 'Call from Unitalk', 
+        START_TIME: callData.startTime,
+        END_TIME: callData.endTime,
+        DURATION: callData.duration,
+        COMPLETED: 'Y', 
+        DIRECTION: callData.direction === 'IN' ? 1 : 2, // 1 for Incoming, 2 for Outgoing
+        DESCRIPTION: `Call from ${callData.callerId} using Unitalk. Disposition: ${callData.disposition}`, 
+        // Add other relevant fields from Unitalk data or Bitrix24 requirements
+        // Examples:
+        ORIGIN_ID: callData.unitalkCallId, // Store Unitalk call ID for reference
+        AUTODIALER_ID: callData.autodialerId, // Store the autodialer ID
+        QUEUE_TIME: callData.queueTime, // If available from Unitalk
+        // ... other fields ...
+      }
     };
 
     // Make the API call using axios
@@ -237,20 +247,67 @@ async function triggerAutomation(automationId, data) {
 
     // Handle the API response
     if (response.data.result) {
-      console.log('Bitrix24 automation triggered successfully');
+      console.log('CRM activity created successfully:', response.data.result);
     } else {
-      console.error('Error triggering Bitrix24 automation:', response.data.error);
+      console.error('Error creating CRM activity:', response.data.error);
       // Handle the error appropriately (e.g., log, notify, retry)
       throw new Error(response.data.error);
     }
 
   } catch (error) {
-    console.error('Error triggering Bitrix24 automation:', error);
-    // Handle the error appropriately (e.g., log, notify, retry)
+    console.error('Error creating CRM activity:', error);
+    // Handle the error appropriately (e.g., log, notify)
     throw error; 
   }
 }
 
+// Function to trigger Bitrix24 automation
+async function triggerAutomation(automationId, data) {
+  try {
+    // Construct the Bitrix24 API URL for triggering automation 
+    const apiUrl = `${config.bitrix24.apiUrl}bizproc.automation.trigger`;
+
+    // Prepare the request payload
+    const payload = {
+        CODE: automationId, 
+        DOCUMENT_ID: [ 'crm', 'CCrmDocumentLead', data.callId ], // Assuming you're working with leads
+        PARAMETERS: data // Pass any additional data needed for the automation
+    };
+
+    // Make the API call using axios
+    const response = await axios.post(apiUrl, payload, {
+        headers: {
+            'Authorization': `Bearer ${accessToken}` 
+        }
+    });
+
+    // Handle the API response
+    if (response.data.result) {
+        console.log('Bitrix24 automation triggered successfully');
+    } else {
+        console.error('Error triggering Bitrix24 automation:', response.data.error);
+
+        // Retry logic for potential API errors 
+        if (response.status === 401) {
+            // Handle unauthorized access - Refresh token and retry
+            accessToken = await refreshAccessToken(); // Implement your token refresh logic here
+            return triggerAutomation(automationId, data); // Retry the automation trigger
+        } else if (response.status >= 500 && response.status < 600) { // Server error
+            // Retry with exponential backoff 
+            await new Promise(resolve => setTimeout(resolve, 2000)); 
+            return triggerAutomation(automationId, data);
+        } else {
+            // Other errors - log and throw
+            throw new Error(response.data.error);
+        }
+    }
+
+  } catch (error) {
+    console.error('Error triggering Bitrix24 automation:', error);
+    // Handle the error appropriately (e.g., log, notify)
+    throw error; 
+  }
+}
 
 // Function to get the queue ID for a given autodialer
 async function getQueueIdForAutodialer(autodialerId) {
