@@ -1,5 +1,6 @@
 const axios = require('axios');
 const config = require('../config');
+const dataService = require('./data'); 
 
 // Function to initiate a call in Bitrix24
 async function initiateBitrix24Call(phoneNumber, leadId, autodialerId) {
@@ -97,7 +98,9 @@ async function getAgentTelephonyStatus(userId) {
     } else {
       // Something happened in setting up the request that triggered an Error
       console.error('Error setting up  
- Bitrix24 API request:', error.message);
+     // insert correct api request
+      Bitrix24 API request:', error.message); 
+       
       throw new Error('An error occurred while fetching telephony status.');
     }
   }
@@ -183,7 +186,29 @@ async function isAgentClockedIn(userId) {
 
 
 // Placeholder functions for other Bitrix24 API interactions (add as needed)
+// Function to get the "Initiative" value for a given autodialer
+async function getInitiativeLeadForAutodialer(autodialerId) {
+  try {
+    // Retrieve agent assignments from Bitrix24 Drive
+    const assignments = await dataService.getAgentAssignments();
 
+    // Find the mapping entry for the given autodialerId
+    const mappingEntry = assignments.find(entry => entry.autodialerId === autodialerId);
+
+    if (mappingEntry && mappingEntry.initiative) {
+      return mappingEntry.initiative;
+    } else {
+      // Handle the case where no mapping is found for the autodialerId
+      console.error('No initiative found for autodialer:', autodialerId);
+      // You might want to throw an error, return a default value, or implement other fallback logic
+      throw new Error('No initiative found for autodialer');
+    }
+
+  } catch (error) {
+    console.error('Error getting Initiative Lead for autodialer:', error);
+    throw error; 
+  }
+}
 
 /// Function to create a CRM activity (call log)
 async function createCrmActivity(callData) {
@@ -194,63 +219,62 @@ async function createCrmActivity(callData) {
 // Function to trigger Bitrix24 automation
 async function triggerAutomation(automationId, data) {
   try {
-   const apiUrl = `${config.bitrix24.apiUrl}bizproc.automation.trigger`;
+    const apiUrl = `${config.bitrix24.apiUrl}bizproc.automation.trigger`;
 
     // Prepare the request payload
     const payload = {
-        CODE: automationId, 
-        DOCUMENT_ID: [ 'crm', 'CCrmDocumentLead', data.callId ], 
-        PARAMETERS: data 
+      CODE: automationId, 
+      DOCUMENT_ID: [ 'crm', 'CCrmDocumentLead', data.callId ], // Assuming you're working with leads
+      PARAMETERS: data // Pass any additional data needed for the automation
     };
 
     // Make the API call using axios
     const response = await axios.post(apiUrl, payload, {
-        headers: {
+      headers: {
         'Authorization': `Bearer ${accessToken}` 
-        }
+      }
     });
 
     // Handle the API response
     if (response.data.result) {
-        console.log('Bitrix24 automation triggered successfully');
+      console.log('Bitrix24 automation triggered successfully');
     } else {
-        console.error('Error triggering Bitrix24 automation:', response.data.error);
-        throw new Error(response.data.error);
+      console.error('Error triggering Bitrix24 automation:', response.data.error);
+      // Handle the error appropriately (e.g., log, notify, retry)
+      throw new Error(response.data.error);
     }
 
-    } catch (error) {
+  } catch (error) {
     console.error('Error triggering Bitrix24 automation:', error);
+    // Handle the error appropriately (e.g., log, notify, retry)
     throw error; 
-    }
+  }
 }
 
 
 // Function to get the queue ID for a given autodialer
 async function getQueueIdForAutodialer(autodialerId) {
   try {
-    // Fetch queue information from Bitrix24 (potentially with caching)
-    const queues = await getBitrix24Queues();
+    // Retrieve agent assignments from Bitrix24 Drive
+    const assignments = await dataService.getAgentAssignments();
 
-    // Retrieve the "Initiative Lead" value for the autodialer 
-    const initiativeLead = await getInitiativeLeadForAutodialer(autodialerId); // need to implement this function
+    // Find the mapping entry for the given autodialerId
+    const mappingEntry = assignments.find(entry => entry.unitalkAutodialerId === autodialerId);
 
-    // Find the matching queue based on the Initiative Lead value
-    const queue = queues.find(q => q.NAME.includes(initiativeLead));
-
-    if (queue) {
-      return queue.ID;
+    if (mappingEntry) {
+      return mappingEntry.bitrix24QueueId;
     } else {
-      // Log a warning and skip the call initiation
+      // Handle the case where no matching queue is found (log a warning and skip the call initiation)
       logger.warn('Queue not found for autodialer, skipping call initiation', { autodialerId });
       return null;
     }
-
   } catch (error) {
     console.error('Error getting queue ID for autodialer:', error);
     // Handle the error appropriately (e.g., log, notify)
     throw error; 
   }
 }
+
 
 // Function to retrieve queue information from Bitrix24 (with caching)
 let cachedQueues = null;
@@ -275,7 +299,7 @@ async function getBitrix24Queues() {
 
     // Cache the results
     cachedQueues = response.data.result;
-    cacheExpiry = Date.now() + (30 * 60 * 1000); // Cache for 30 minutes (adjust as needed)
+    cacheExpiry = Date.now() + (30 * 60 * 1000); // Cache for 30 minutes 
 
     // Return the list of queues
     return cachedQueues;
@@ -283,8 +307,8 @@ async function getBitrix24Queues() {
   } catch (error) {
     console.error('Error getting Bitrix24 queues:', error);
 
-    // Add retry logic for potential API errors or network issues (example)
-    if (error.response && (error.response.status === 500 || error.response.status === 503)) { // Retry on 500 or 503 errors
+    // Retry logic for potential API errors or network issues
+    if (error.response && (error.response.status === 500 || error.response.status === 503)) {
       const retryDelay = 2000; 
       logger.warn(`Retrying getBitrix24Queues after ${retryDelay / 1000} seconds...`);
       await new Promise(resolve => setTimeout(resolve, retryDelay));
