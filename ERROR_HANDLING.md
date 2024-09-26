@@ -93,3 +93,55 @@ async function retryOperation(operation, ...args) {
     }
   }
 }
+
+## Specific Error Scenarios and Mitigation (Implemented)
+
+*   **Unitalk API Errors**
+    *   **HTTP Status Codes:**  Basic handling for different HTTP status codes is in place.
+        *   401 Unauthorized: *Implement token refresh logic and retry the API call*
+        *   Other errors: Logged with error details.
+    *   **Rate Limiting:**  *Implement rate limiting and backoff strategies if necessary.*
+    *   **Specific Error Messages:**  *Handle specific error messages returned by Unitalk's API as they are encountered during development and testing*
+
+*   **Bitrix24 API Errors**
+    *   **HTTP Status Codes:**  Specific handling for 400 (Bad Request), 401 (Unauthorized), 403 (Forbidden), and 404 (Not Found) errors.
+        *   401 Unauthorized: *Implement token refresh logic and retry the API call*
+        *   Other errors: Logged with error details and re-thrown to be handled at a higher level.
+    *   **Rate Limiting:** *Implement rate limiting if necessary.*
+    *   **Specific Error Messages:** *Handle specific error messages returned by Bitrix24's API as they are encountered*
+
+*   **Data Storage Errors (Bitrix24 Drive)**
+    *   **Bitrix24 Drive API Errors:**  *Retry mechanisms with exponential backoff have been implemented for file uploads and downloads.*
+    *   **File System Errors (during development/testing):**  *Handled with logging.*
+
+*   **Other Potential Errors**
+    *   **Invalid or Missing Data in Webhook Payloads:** *Implement data validation and checks to handle cases where expected data is missing or in an unexpected format. Log warnings or errors for invalid data and potentially skip processing the webhook if critical information is missing.*
+    *   **Authentication or Authorization Errors:** *Handle scenarios where the Bitrix24 access token is invalid or expired. Implement token refresh logic and retry mechanisms.*
+    *   **Integration Logic Errors:** *Thoroughly test and debug your code to identify and fix any logical errors or unexpected behavior. Use logging and debugging tools to track the flow of your code and pinpoint the source of errors.*
+
+**Example Retry Logic (Illustrative)**
+
+```javascript
+async function retryOperation(operation, ...args) {
+  const maxRetries = 3;
+  let retryCount = 0;
+
+  while (retryCount < maxRetries) {
+    try {
+      return await operation(...args);
+    } catch (error) {
+      retryCount++;
+      console.error(`Error in operation (attempt ${retryCount}):`, error);
+
+      if (retryCount < maxRetries) {
+        const delay = Math.pow(2, retryCount) * 1000; 
+        console.log(`Retrying in ${delay / 1000} seconds...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      } else {
+        // All retries failed, handle the final error (log, notify, etc.)
+        console.error('Operation failed after retries.');
+        throw error; 
+      }
+    }
+  }
+}
