@@ -2,6 +2,16 @@
 
 This document records key decisions and their rationale made during the development of the Unitalk & Bitrix24 integration project.
 
+**Date** | **Decision** | **Rationale** | **Impact**
+------- | -------- | -------- | --------
+2024-10-17 | Do not utilize Unitalk's native integration tab. | We'll manage the integration through custom code and webhooks for better control and flexibility. | Requires implementing all integration logic manually.
+2024-10-17 | Handle user assignments and SIP line connections dynamically through the integration code. | This allows for more flexible and automated management of agent connections to the outer line. | Requires implementing logic to fetch user SIP credentials and manage their connection status.
+2024-10-17 | Use Bitrix24's `voximplant.user.get` API to fetch user SIP credentials dynamically. | This avoids storing sensitive information in our code and ensures we're always using the correct credentials. | Requires implementing API calls to fetch credentials when needed.
+2024-10-17 | Confirm that Unitalk's predictive dialer can utilize SIP lines associated with an outer line via outgoing scenarios. | This allows us to use the Voximplant Australian number as the caller ID while leveraging the predictive dialer's features. | No direct impact, but confirms our approach is feasible.
+2024-10-17 | Combine Bitrix24 webhooks with periodic checks of agent availability using the `telephony.getstatus` API call for agent status updates. | This ensures comprehensive agent status synchronization and handles various scenarios. | Requires implementing both webhook handling and API calls for agent status management.
+2024-10-17 | Skip Bitrix24 Cloud PBX configuration. | It's not directly relevant to our integration as we're using their SIP connector and managing the connection through Unitalk. | Simplifies the configuration process.
+
+
 ## Core Integration Strategy
 
 * **Date:** September 13, 2024
@@ -364,3 +374,28 @@ This document records key decisions and their rationale made during the developm
     * Other relevant `callState` values will be mapped as needed.
 * **Rationale:** 
     * These decisions further refine the disposition outcome mapping to align with the project's specific requirements and ensure accurate representation of call outcomes in Bitrix24 CRM
+
+
+## Decision 1: Not Utilizing Unitalk's Native Integration Tab
+
+* **Date:** 2024-10-17
+* **Decision:** We will not utilize Unitalk's native integration tab for now.
+* **Reasoning:** We will manage the integration through our custom code and webhooks for better control and flexibility.
+
+## Decision 2: Handling User Assignments and SIP Line Connections Dynamically
+
+* **Date:** 2024-10-17
+* **Decision:** We will handle user assignments and SIP line connections dynamically through our integration code.
+* **Reasoning:** This allows us to manage user-specific SIP credentials and ensure efficient utilization of the single outer line with multiple SIP lines.
+
+## Decision 3: Using Bitrix24 API for Fetching User SIP Credentials
+
+* **Date:** 2024-10-17
+* **Decision:** We will use the Bitrix24 API (`voximplant.user.get`) to fetch user-specific SIP credentials dynamically.
+* **Reasoning:** This avoids storing sensitive information in our code and ensures we are always using the correct credentials for each user.
+
+## Decision 4: Combining Bitrix24 Webhooks and API Calls for Agent Status Updates
+
+* **Date:** 2024-10-17
+* **Decision:** We will combine Bitrix24 webhooks (`ONVOXIMPLANTCALLSTART` and `ONVOXIMPLANTCALLEND`) with periodic checks of agent availability using the `telephony.getstatus` API call.
+* **Reasoning:** This approach provides a more robust solution for agent status synchronization, covering various scenarios and potential edge cases.

@@ -369,6 +369,27 @@
             * Set task reminders to ensure timely follow-up and action
 ## Unitalk API
 
+### Outer Line Configuration
+
+*   Each outer line represents a single external number.
+*   Multiple SIP lines can be added to an outer line to handle concurrent calls.
+*   User assignments and SIP line management can be handled dynamically through the integration code.
+*   Recommended "Type of number": Number with traffic encryption multichannel.
+
+### Predictive Dialer and SIP Lines
+
+*   Unitalk's predictive dialer can utilize SIP lines associated with an outer line through outgoing scenarios.
+
+### Bitrix24 API
+
+*   Use `voximplant.user.get` to fetch user-specific SIP credentials dynamically.
+
+## Bitrix24
+
+*   No manual configuration is needed for the SIP connector as it's automatically set up upon purchase.
+*   Configure outgoing calls on a per-user basis in "Telephony" -> "Users".
+*   Cloud PBX configuration is not directly relevant to our integration using REST API, Unitalk API, Bitrxi24 SIP Connector, may be required at a later date.
+
 **Core Functionalities:**
 
 * **Call management:** 
@@ -664,6 +685,43 @@ Remember to thoroughly test the SIP integration in a development or staging envi
         * `X-RateLimit-Reset`: The time (in Unix timestamp) when the rate limit window will reset.
 
 ### Unitalk
+
+### Outer Lines and SIP Lines
+
+* Each outer line in Unitalk represents a single external number.
+* Multiple SIP lines can be added to an outer line to handle concurrent calls.
+* We will configure one outer line for the Voximplant Australian number and specify the desired number of SIP lines (e.g., 10) to accommodate the predictive dialer's call volume.
+
+### Departments & Users
+
+* We will create a single department with the type "Group of External Numbers (GSM)" and add the Voximplant outer line to it.
+* We will not directly assign users to this department in the Unitalk admin panel. Instead, we will manage user assignments and SIP line connections dynamically through our integration code.
+
+### Predictive Dialer and SIP Lines
+
+* Unitalk's predictive dialer can utilize SIP lines associated with an outer line through outgoing scenarios.
+* This allows us to leverage the advanced features of the predictive dialer while using the Voximplant Australian number as the caller ID.
+
+### Bitrix24 API
+
+* We will use the Bitrix24 API (`voximplant.user.get`) to fetch user-specific SIP credentials dynamically. This avoids storing sensitive information in our code and ensures we are always using the correct credentials for each user.
+
+### Agent Status Updates
+
+* We will combine Bitrix24 webhooks (`ONVOXIMPLANTCALLSTART` and `ONVOXIMPLANTCALLEND`) with periodic checks of agent availability using the `telephony.getstatus` API call. This approach provides a more robust solution for agent status synchronization, covering various scenarios and potential edge cases.
+
+### Unitalk API Request Format
+
+* Ensure that API requests to Unitalk adhere to the following format:
+https://api.unitalk.cloud:8443/tracking/api/phones/inner/setStatus?number=9999&status=WORK
+
+* `number` — operator line number
+* `status` — new condition (WORK, PAUS, STOP)
+
+### Other Notes
+
+* We will not utilize Unitalk's native integration tab for now. We will manage the integration through our custom code and webhooks for better control and flexibility.
+* We will leverage Bitrix24's SIP connector for call recording, simplifying the integration and potentially speeding up development.
 
 * **Webhooks:**
     * Unitalk's webhooks provide real-time notifications for various call events, such as call start, answer, end, recording completion, etc. Utilize webhooks to trigger actions in Bitrix24 based on these events, enabling seamless automation and data synchronization.

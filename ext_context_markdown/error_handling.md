@@ -2,14 +2,41 @@
 
 This document outlines the error handling and retry strategies implemented in the Unitalk & Bitrix24 integration to ensure robustness and resilience in the face of potential failures.
 
-## General Principles
+**General Principles**
 
+*   Implement robust error handling for all API calls and data storage functions.
+*   Catch and log all errors with sufficient context (e.g., timestamps, request/response data).
+*   Distinguish between retryable and non-retryable errors.
+*   Implement retry mechanisms for retryable errors with appropriate backoff strategies (e.g., exponential backoff).
+*   For non-retryable errors, implement escalation procedures (e.g., notifications, alerts).
+* **Logging:** Log all errors with sufficient context to facilitate debugging and troubleshooting.
+* **Retrying:** Implement retry mechanisms for transient errors, such as network issues or temporary API unavailability.
+* **Escalation:** For critical errors that cannot be automatically recovered, escalate them through appropriate channels (e.g., email notifications, logging to a monitoring system).
+* **Graceful Degradation:** Design the integration to degrade gracefully in case of errors, ensuring that core functionalities remain operational even if some components fail.
 *   **Logging:** All errors and exceptions should be logged with appropriate severity levels (e.g., `error`, `warn`, `info`) using the Winston logging library. Log messages should include relevant context and details to aid in debugging and troubleshooting.
 *   **User Feedback:**  In case of errors that directly impact the user experience (e.g., failed call initiation, CRM update failures), provide clear and informative feedback to the user within the Bitrix24 interface or through other appropriate channels (e.g., notifications).
 *   **Retry Mechanisms:** Implement retry mechanisms for API calls and other operations that might be prone to transient failures (e.g., network issues, temporary server errors). Use exponential backoff strategies to avoid overwhelming external services.
 *   **Fallback Strategies:**  For critical errors that cannot be resolved through retries, implement fallback strategies to gracefully handle the situation and minimize disruption to the user experience (e.g., default values, alternative call routing, manual intervention).
 
-## Specific Error Scenarios and Mitigation (Implemented)
+## Specific Error Scenarios, Considerations and Mitigation (Implemented)
+
+* **API Interactions:**
+    * Handle potential errors in API responses, such as invalid requests, authentication failures, or rate limiting.
+    * Implement retry mechanisms with exponential backoff for transient API errors.
+    * Consider using circuit breakers to prevent cascading failures in case of prolonged API issues.
+
+* **Data Storage:**
+    * Handle potential errors during data storage operations, such as file system errors or database errors.
+    * Implement data validation to prevent storing invalid or corrupted data.
+    * Consider using backups and redundancy to protect against data loss.
+
+* **Dynamic Queue Assignment:**
+    * Handle potential errors during agent status updates and queue operations.
+    * Implement fallback mechanisms to ensure calls are routed even if the dynamic queue assignment logic encounters errors.
+
+* **SIP Credential Fetching:**
+    * Handle potential errors during the fetching of user SIP credentials.
+    * Implement caching or fallback mechanisms to ensure calls can still be made even if credential fetching fails temporarily.
 
 *   **Unitalk API Errors**
     *   **HTTP Status Codes:**  Basic handling for different HTTP status codes is in place.
@@ -69,7 +96,7 @@ This document outlines the error handling and retry strategies implemented in th
 
 **Example Retry Logic (Illustrative)**
 
-```javascript
+````javascript
 async function retryOperation(operation, ...args) {
   const maxRetries = 3;
   let retryCount = 0;
@@ -93,7 +120,7 @@ async function retryOperation(operation, ...args) {
     }
   }
 }
-
+````
 ## Specific Error Scenarios and Mitigation (Implemented)
 
 *   **Unitalk API Errors**
@@ -121,7 +148,7 @@ async function retryOperation(operation, ...args) {
 
 **Example Retry Logic (Illustrative)**
 
-```javascript
+````javascript
 async function retryOperation(operation, ...args) {
   const maxRetries = 3;
   let retryCount = 0;
@@ -145,3 +172,48 @@ async function retryOperation(operation, ...args) {
     }
   }
 }
+````
+
+**Specific Considerations**
+
+*   **API Calls:**
+    *   Handle potential errors in API responses (e.g., invalid requests, authentication failures, rate limiting).
+    *   Implement retry mechanisms for network errors or temporary API unavailability.
+    *   Consider using a dedicated library or service for managing API requests and retries (e.g., axios-retry).
+
+*   **Data Storage:**
+    *   Handle potential errors during file uploads or database operations.
+    *   Implement retry mechanisms for temporary storage unavailability.
+
+*   **Dynamic Queue Assignment:**
+    *   Handle potential errors during WebSocket connection, subscription, or message processing.
+    *   Implement fallback mechanisms in case of WebSocket failures (e.g., periodic polling for agent status updates).
+
+*   **SIP Credential Fetching:**
+    *   Handle potential errors during the retrieval of user SIP credentials from the Bitrix24 API.
+    *   Implement retry mechanisms or fallback strategies in case of credential fetching failures.
+
+**Example Implementation**
+
+```javascript
+async function getAgentTelephonyStatus(bitrixAgentId) {
+  try {
+    // ... (API call to Bitrix24)
+  } catch (error) {
+    if (isRetryableError(error)) {
+      // Retry the API call after a delay
+      return await retry(() => getAgentTelephonyStatus(bitrixAgentId), { retries: 3, delay: 1000 });
+    } else {
+      // Handle non-retryable errors (log, escalate, etc.)
+      console.error('Non-retryable error in getAgentTelephonyStatus:', error);
+      throw error;
+    }
+  }
+}
+```
+
+## Error Handling Checklist
+
+* [ ] Implement logging for all errors
+* [ ] Implement retry mechanisms for transient errors
+* [ ] Implement escalation for critical
